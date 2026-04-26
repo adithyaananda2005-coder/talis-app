@@ -3,6 +3,10 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
+
+class BookingController extends Controller
+{
+    //
 use Illuminate\Support\Facades\Http;
 
 class BookingController extends Controller

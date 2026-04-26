@@ -2,6 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Http\Request;
+
+class AssetController extends Controller
+{
+    //
 class AssetController extends Controller
 {
     public function getDetail($nama_paket)
