@@ -50,6 +50,13 @@ class AssetController extends Controller
             ], 404);
         }
 
-        return response()->json($packages[$nama_paket], 200);
+        $paket = $packages[$nama_paket];
+
+        // Anggota 4 — logika status barang
+        if ($paket['status'] === 'sedang diperbaiki') {
+            $paket['pesan'] = 'Paket ini sedang tidak dapat dipinjam karena dalam perbaikan.';
+        }
+
+        return response()->json($paket, 200);
     }
 }
