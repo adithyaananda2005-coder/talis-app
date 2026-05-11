@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-
-use Illuminate\Support\Facades\Http;
+use Illuminate\Support\Facades\DB;
+use App\Jobs\ProcessOrderJob;
 
 class BookingController extends Controller
 {
@@ -13,31 +13,23 @@ class BookingController extends Controller
         // VALIDASI INPUT
         $validated = $request->validate([
             'nama'  => 'required|string|max:100',
-            'nim'   => 'required|digits:10', // NIM harus 10 digit angka
+            'nim'   => 'required|digits:10',
             'paket' => 'required|string'
         ]);
 
-        try {
-            // POINT-TO-POINT: CALL SERVICE B (PORT 8001)
-            $response = Http::timeout(5)->get(
-                'http://localhost:8001/api/assets/package/' . $validated['paket']
-            );
+        // AMBIL DATA PAKET DARI DATABASE LOKAL
+        $asset = DB::table('assets')
+            ->where('key_paket', $validated['paket'])
+            ->first();
 
-            // ERROR HANDLING JIKA SERVICE B GAGAL
-            if (!$response->successful()) {
-                return response()->json([
-                    'error' => 'Gagal mengambil data dari Service B',
-                ], 500);
-            }
-
-            $dataPaket = $response->json();
-
-        } catch (\Exception $e) {
+        if (!$asset) {
             return response()->json([
-                'error' => 'Service B tidak aktif / tidak bisa diakses',
-                'message' => $e->getMessage()
-            ], 500);
+                'error' => 'Paket tidak ditemukan',
+            ], 404);
         }
+
+        // DISPATCH JOB KE REDIS QUEUE
+        ProcessOrderJob::dispatch($validated);
 
         // RESPONSE SUKSES
         return response()->json([
@@ -45,7 +37,7 @@ class BookingController extends Controller
             'peminjam'     => $validated['nama'],
             'nim'          => $validated['nim'],
             'paket'        => $validated['paket'],
-            'detail_paket' => $dataPaket
+            'detail_paket' => $asset
         ], 201);
     }
 }
